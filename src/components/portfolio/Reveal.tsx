@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 
+import { ShinyText } from "@/components/effects/ShinyText";
+import { TextGenerate } from "@/components/effects/TextGenerate";
+
 export function Reveal({
   children,
   delay = 0,
@@ -38,12 +41,22 @@ export function SectionHeading({
     <Reveal className="mx-auto mb-14 max-w-2xl text-center">
       <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-primary">
         <span className="size-1.5 rounded-full bg-primary shadow-[0_0_12px_var(--primary)]" />
-        {eyebrow}
+        <ShinyText text={eyebrow} speed={7} />
       </span>
       <h2 className="mt-5 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
-        {title}
+        <TextGenerate text={title} />
       </h2>
-      {description ? <p className="mt-4 text-base text-muted-foreground">{description}</p> : null}
+      {description ? (
+        <motion.p
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-4 text-base text-muted-foreground"
+        >
+          {description}
+        </motion.p>
+      ) : null}
     </Reveal>
   );
 }

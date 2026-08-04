@@ -1,6 +1,11 @@
+import type { Settings } from "./types";
+
 export const profile = {
   name: "Mohanram Murugesan",
   title: "Cybersecurity Engineer",
+  // Paste a photo URL here or upload one in the admin panel (Profile & Hero).
+  // A gradient monogram is shown as fallback while the image is missing or fails to load.
+  avatar: "",
   roles: ["Cybersecurity Engineer", "SOC Analyst", "SIEM Engineer", "VAPT Specialist"],
   tagline:
     "I defend production systems end to end — hunting threats in SIEM telemetry, engineering detections, and breaking applications before attackers do.",
@@ -19,4 +24,24 @@ export const profile = {
     { label: "Pentests delivered", value: "40+" },
     { label: "Years in security", value: "4+" },
   ],
+};
+
+/**
+ * Default site settings used when no Firestore `settings/profile` document
+ * exists (or Firebase is unreachable). Everything is editable in the admin
+ * panel and every content section starts visible.
+ */
+export const defaultSettings: Settings = {
+  ...profile,
+  showStats: true,
+  showResume: true,
+  visibleSections: {
+    about: true,
+    skills: true,
+    experience: true,
+    education: true,
+    projects: true,
+    certifications: true,
+    contact: true,
+  },
 };

@@ -1,12 +1,12 @@
 # Aura Portfolio
 
-Build a stunning, highly animated, ultra-modern, interactive, and professional developer portfolio web application with a secure Admin Dashboard backend. 
+Build a stunning, highly animated, ultra-modern, interactive, and professional developer portfolio web application with a secure Admin Dashboard backend.
 
 ### Modern Visual Aesthetic & Color Palette
 
-* Design Style: High-end dark mode aesthetics with sleek glassmorphism, subtle glowing accents, clean typography, and spacious layout.
+- Design Style: High-end dark mode aesthetics with sleek glassmorphism, subtle glowing accents, clean typography, and spacious layout.
 
-* Color Palette:
+- Color Palette:
 
   - Background: Very dark slate/black (`#0B0F17`)
 
@@ -18,7 +18,7 @@ Build a stunning, highly animated, ultra-modern, interactive, and professional d
 
   - Text: Bright White (`#F9FAFB`) for headers, Soft Muted Gray (`#9CA3AF`) for body text
 
-* UI Components: Lucide React icons, Tailwind CSS styling, Framer Motion transitions/effects, glowing borders on hover, dynamic gradient text, and responsive cards.
+- UI Components: Lucide React icons, Tailwind CSS styling, Framer Motion transitions/effects, glowing borders on hover, dynamic gradient text, and responsive cards.
 
 ---
 
@@ -28,23 +28,23 @@ Build a stunning, highly animated, ultra-modern, interactive, and professional d
 
 Include smooth scrolling nav bar, scroll progress indicator, and section reveal animations.
 
-* **Hero Section:** Dynamic animated headline, high-impact subtitle, interactive CTA buttons ("Explore Projects", "View Resume", "Get in Touch"), interactive background canvas/particles or subtle floating gradient orbs.
+- **Hero Section:** Dynamic animated headline, high-impact subtitle, interactive CTA buttons ("Explore Projects", "View Resume", "Get in Touch"), interactive background canvas/particles or subtle floating gradient orbs.
 
-* **About & Skills:** Visual tech-stack radar/grid with dynamic progress bars or glowing skill tags categorized by Frontend, Backend, Database, and Tools.
+- **About & Skills:** Visual tech-stack radar/grid with dynamic progress bars or glowing skill tags categorized by Frontend, Backend, Database, and Tools.
 
-* **Experience & Education:** Interactive vertical timeline with expandable nodes, glowing bullet points, company logos/placeholders, and dates.
+- **Experience & Education:** Interactive vertical timeline with expandable nodes, glowing bullet points, company logos/placeholders, and dates.
 
-* **Projects Showcase:** Interactive project grid with tag filters (e.g., React, Node, AI, Firebase). Each card features project preview image/placeholder, interactive live demo & GitHub buttons, key tech badges, and a modal view for deeper project details.
+- **Projects Showcase:** Interactive project grid with tag filters (e.g., React, Node, AI, Firebase). Each card features project preview image/placeholder, interactive live demo & GitHub buttons, key tech badges, and a modal view for deeper project details.
 
-* **Certifications:** Modern badge-style showcase with credential links and verification dates.
+- **Certifications:** Modern badge-style showcase with credential links and verification dates.
 
-* **Contact Section:** Functional contact form with success animations, along with direct links to GitHub, LinkedIn, Email, and social platforms.
+- **Contact Section:** Functional contact form with success animations, along with direct links to GitHub, LinkedIn, Email, and social platforms.
 
 #### 2. Protected Admin Dashboard (`/admin`)
 
-* **Authentication:** Firebase Auth modal/page for secure email/password login. Route guards to protect the `/admin` page.
+- **Authentication:** Firebase Auth modal/page for secure email/password login. Route guards to protect the `/admin` page.
 
-* **Content Management (Full CRUD Operations):**
+- **Content Management (Full CRUD Operations):**
 
   - Ability to Add, Edit, Update, and Delete Projects, Experience entries, Education history, Certifications, and Skills in real-time.
 
@@ -54,23 +54,23 @@ Include smooth scrolling nav bar, scroll progress indicator, and section reveal 
 
 #### 3. Database & Backend Integration (Firebase)
 
-* Integrate Firebase Firestore as the primary database for storing dynamic content (Projects, Skills, Experience, Education, Certifications).
+- Integrate Firebase Firestore as the primary database for storing dynamic content (Projects, Skills, Experience, Education, Certifications).
 
-* Include a `firebase.ts` configuration setup that loads credentials cleanly from environment variables (`import.meta.env`).
+- Include a `firebase.ts` configuration setup that loads credentials cleanly from environment variables (`import.meta.env`).
 
-* Set up dynamic fallback mock data so the app looks complete immediately while waiting for Firebase configuration keys to be populated.
+- Set up dynamic fallback mock data so the app looks complete immediately while waiting for Firebase configuration keys to be populated.
 
 ---
 
 ### Instructions for Code Generation
 
-* Build all components using React, TypeScript, Tailwind CSS, and Lucide React icons.
+- Build all components using React, TypeScript, Tailwind CSS, and Lucide React icons.
 
-* Use Framer Motion or Tailwind animations for entry transitions, hover lifts, glowing card states, and smooth modals.
+- Use Framer Motion or Tailwind animations for entry transitions, hover lifts, glowing card states, and smooth modals.
 
-* Ensure 100% responsiveness across desktop, tablet, and mobile browsers.
+- Ensure 100% responsiveness across desktop, tablet, and mobile browsers.
 
-* Keep code modular with clean separation between UI components, Firebase service layers, and page routes (Public Home vs. Admin Panel).
+- Keep code modular with clean separation between UI components, Firebase service layers, and page routes (Public Home vs. Admin Panel).
 
 This project was built with [Lovable](https://lovable.dev).
 

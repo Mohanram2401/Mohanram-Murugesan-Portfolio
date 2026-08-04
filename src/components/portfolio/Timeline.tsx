@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Briefcase, ChevronDown, GraduationCap, MapPin } from "lucide-react";
 import { useState } from "react";
 
-import { useSection } from "@/hooks/usePortfolioData";
+import { SpotlightCard } from "@/components/effects/SpotlightCard";
+import { useSection, useSettings } from "@/hooks/usePortfolioData";
 import { Reveal, SectionHeading } from "./Reveal";
 
 interface Node {
@@ -25,7 +26,7 @@ function TimelineNode({ node, index, kind }: { node: Node; index: number; kind: 
         <span className="absolute size-4 rounded-full bg-primary/25 blur-[6px]" />
         <span className="size-2.5 rounded-full bg-gradient-brand shadow-[0_0_14px_var(--primary)]" />
       </span>
-      <div className="rounded-2xl p-5 glass glow-hover sm:p-6">
+      <SpotlightCard className="rounded-2xl p-5 glass glow-hover sm:p-6">
         <button
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-start justify-between gap-4 text-left"
@@ -79,7 +80,7 @@ function TimelineNode({ node, index, kind }: { node: Node; index: number; kind: 
             </motion.ul>
           )}
         </AnimatePresence>
-      </div>
+      </SpotlightCard>
     </Reveal>
   );
 }
@@ -87,6 +88,10 @@ function TimelineNode({ node, index, kind }: { node: Node; index: number; kind: 
 export function Timeline() {
   const { data: experience = [] } = useSection("experience");
   const { data: education = [] } = useSection("education");
+  const { data: settings } = useSettings();
+  const visible = settings?.visibleSections;
+  const showExp = visible?.experience ?? true;
+  const showEdu = visible?.education ?? true;
 
   const work: Node[] = experience.map((e) => ({
     id: e.id,
@@ -107,6 +112,11 @@ export function Timeline() {
     bullets: e.details ? [e.details] : [],
   }));
 
+  const groups = [
+    showExp ? { label: "Experience", nodes: work, kind: "work" as const } : null,
+    showEdu ? { label: "Education", nodes: study, kind: "edu" as const } : null,
+  ].filter(Boolean) as { label: string; nodes: Node[]; kind: "work" | "edu" }[];
+
   return (
     <section id="experience" className="relative scroll-mt-24 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-6">
@@ -115,16 +125,22 @@ export function Timeline() {
           title="Experience & Education"
           description="Roles, milestones and the training behind them. Tap any node to expand."
         />
-        <div className="grid gap-12 lg:grid-cols-2">
-          {[
-            { label: "Experience", nodes: work, kind: "work" as const },
-            { label: "Education", nodes: study, kind: "edu" as const },
-          ].map((group) => (
+        <div className={`grid gap-12 ${groups.length > 1 ? "lg:grid-cols-2" : ""}`}>
+          {groups.map((group) => (
             <div key={group.label}>
               <h3 className="mb-6 font-mono text-xs tracking-[0.25em] text-muted-foreground uppercase">
                 {group.label}
               </h3>
               <div className="relative space-y-5">
+                <span
+                  className="absolute left-[19px] top-2 bottom-2 w-1 rounded-full blur-[6px]"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, var(--primary), var(--accent2), transparent)",
+                    opacity: 0.2,
+                  }}
+                  aria-hidden
+                />
                 <span className="absolute left-[20px] top-2 bottom-2 w-px bg-gradient-to-b from-primary/60 via-accent2/40 to-transparent" />
                 {group.nodes.map((n, i) => (
                   <TimelineNode key={n.id} node={n} index={i} kind={group.kind} />

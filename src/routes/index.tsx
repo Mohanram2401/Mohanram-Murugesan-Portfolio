@@ -7,7 +7,11 @@ import { Footer } from "@/components/portfolio/Footer";
 import { Hero } from "@/components/portfolio/Hero";
 import { Navbar } from "@/components/portfolio/Navbar";
 import { Projects } from "@/components/portfolio/Projects";
+import { SectionDivider } from "@/components/portfolio/SectionDivider";
+import { TechMarquee } from "@/components/portfolio/TechMarquee";
 import { Timeline } from "@/components/portfolio/Timeline";
+import { useSettings } from "@/hooks/usePortfolioData";
+import { defaultSettings } from "@/lib/profile";
 
 const title = "Mohanram Murugesan — Cybersecurity Engineer & SOC Analyst";
 const description =
@@ -28,18 +32,47 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { data: settings } = useSettings();
+  const v = settings?.visibleSections ?? defaultSettings.visibleSections;
+
   return (
-    <div className="relative min-h-screen overflow-x-clip">
+    <>
       <Navbar />
       <main>
         <Hero />
-        <About />
-        <Timeline />
-        <Projects />
-        <Certifications />
-        <Contact />
+        {v.skills ? <TechMarquee /> : null}
+        {v.about ? (
+          <>
+            <SectionDivider />
+            <About />
+          </>
+        ) : null}
+        {v.experience || v.education ? (
+          <>
+            <SectionDivider />
+            <Timeline />
+          </>
+        ) : null}
+        {v.projects ? (
+          <>
+            <SectionDivider />
+            <Projects />
+          </>
+        ) : null}
+        {v.certifications ? (
+          <>
+            <SectionDivider />
+            <Certifications />
+          </>
+        ) : null}
+        {v.contact ? (
+          <>
+            <SectionDivider />
+            <Contact />
+          </>
+        ) : null}
       </main>
       <Footer />
-    </div>
+    </>
   );
 }

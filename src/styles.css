@@ -117,9 +117,11 @@
     var(--primary) 45%,
     var(--accent2) 100%
   );
-  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
+  --shadow-glow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
     0 18px 60px -20px color-mix(in oklab, var(--primary) 55%, transparent);
-  --shadow-glow-violet: 0 0 0 1px color-mix(in oklab, var(--accent2) 30%, transparent),
+  --shadow-glow-violet:
+    0 0 0 1px color-mix(in oklab, var(--accent2) 30%, transparent),
     0 18px 60px -20px color-mix(in oklab, var(--accent2) 55%, transparent);
 }
 
@@ -210,4 +212,150 @@
 @utility animate-shimmer {
   background-size: 200% auto;
   animation: shimmer-line 6s linear infinite;
+}
+
+@keyframes meteor-fall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(215deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-28vw, 70vh, 0) rotate(215deg);
+    opacity: 0;
+  }
+}
+
+@utility meteor {
+  animation: meteor-fall 6s linear infinite;
+  opacity: 0;
+  filter: blur(1px);
+}
+
+@keyframes marquee-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee-x linear infinite;
+}
+
+@utility animate-marquee-reverse {
+  animation: marquee-x linear infinite reverse;
+}
+
+@keyframes shiny-text-kf {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@utility shiny-text {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 0%,
+    var(--foreground) 45%,
+    color-mix(in oklab, var(--foreground) 100%, transparent) 55%,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@utility animate-shiny-text {
+  animation: shiny-text-kf linear infinite;
+}
+
+@keyframes pulse-atmo {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+
+@keyframes orbit-rot {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rotating orbital track (OrbitImages). */
+@utility animate-orbit {
+  animation: orbit-rot linear infinite;
+}
+
+/* Counter-rotating child keeps orbiting items upright. */
+.orbit-counter {
+  animation: orbit-rot linear infinite reverse;
+}
+
+@keyframes electric-flicker {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes scan-rot {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility animate-scan {
+  animation: scan-rot 9s linear infinite;
+}
+
+@keyframes globe-spin {
+  from {
+    transform: rotateX(-15deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-15deg) rotateY(360deg);
+  }
+}
+
+@utility animate-globe-spin {
+  animation: globe-spin 20s linear infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.6);
+  }
 }

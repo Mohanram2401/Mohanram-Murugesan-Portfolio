@@ -173,7 +173,8 @@ export const mockEducation: Education[] = [
     institution: "Independent / Self-directed",
     startDate: "2021",
     endDate: "2022",
-    details: "Hands-on labs across Active Directory attacks, web exploitation and malware analysis.",
+    details:
+      "Hands-on labs across Active Directory attacks, web exploitation and malware analysis.",
     order: 2,
   },
 ];

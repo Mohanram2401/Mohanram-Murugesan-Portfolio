@@ -25,9 +25,7 @@ export function SectionManager({ config }: { config: SectionConfig }) {
 
   const save = useMutation({
     mutationFn: async (values: Record<string, unknown>) => {
-      const missing = config.fields.find(
-        (f) => f.required && !String(values[f.key] ?? "").trim(),
-      );
+      const missing = config.fields.find((f) => f.required && !String(values[f.key] ?? "").trim());
       if (missing) throw new Error(`${missing.label} is required`);
       const { id, ...rest } = values as { id?: string };
       if (id) {

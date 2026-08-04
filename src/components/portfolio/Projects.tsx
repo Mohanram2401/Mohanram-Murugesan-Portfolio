@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Github, Sparkles, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { SpotlightCard } from "@/components/effects/SpotlightCard";
 import { useSection } from "@/hooks/usePortfolioData";
 import type { Project } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Reveal";
@@ -14,77 +15,79 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="group flex flex-col overflow-hidden rounded-3xl glass glow-hover"
+      className="flex flex-col"
     >
-      <button onClick={onOpen} className="relative aspect-16/10 overflow-hidden text-left">
-        {project.image ? (
-          <img
-            src={project.image}
-            alt={project.title}
-            loading="lazy"
-            className="size-full object-cover transition-transform duration-700 group-hover:scale-108"
-          />
-        ) : (
-          <div className="grid size-full place-items-center bg-secondary/50">
-            <Sparkles className="size-8 text-primary/60" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-        {project.featured ? (
-          <span className="absolute left-4 top-4 rounded-full border border-primary/40 bg-background/70 px-3 py-1 font-mono text-[10px] tracking-wider text-primary uppercase backdrop-blur">
-            Featured
-          </span>
-        ) : null}
-      </button>
-
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="font-display text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
-          {project.title}
-        </h3>
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-          {project.description}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {project.tech.slice(0, 4).map((t) => (
-            <span
-              key={t}
-              className="rounded-md border border-border/70 bg-secondary/40 px-2 py-0.5 font-mono text-[11px] text-muted-foreground"
-            >
-              {t}
+      <SpotlightCard className="group flex h-full flex-col overflow-hidden rounded-3xl glass glow-hover">
+        <button onClick={onOpen} className="relative aspect-16/10 overflow-hidden text-left">
+          {project.image ? (
+            <img
+              src={project.image}
+              alt={project.title}
+              loading="lazy"
+              className="size-full object-cover transition-transform duration-700 group-hover:scale-108"
+            />
+          ) : (
+            <div className="grid size-full place-items-center bg-secondary/50">
+              <Sparkles className="size-8 text-primary/60" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+          {project.featured ? (
+            <span className="absolute left-4 top-4 rounded-full border border-primary/40 bg-background/70 px-3 py-1 font-mono text-[10px] tracking-wider text-primary uppercase backdrop-blur">
+              Featured
             </span>
-          ))}
-        </div>
-        <div className="mt-6 flex items-center gap-2">
-          <button
-            onClick={onOpen}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/12 px-3 py-2 text-xs font-medium text-primary ring-1 ring-primary/25 transition-colors hover:bg-primary/20"
-          >
-            Case study
-            <ArrowUpRight className="size-3.5" />
-          </button>
-          {project.demoUrl ? (
-            <a
-              href={project.demoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-accent3/50 hover:text-accent3"
-            >
-              Live demo
-            </a>
           ) : null}
-          {project.githubUrl ? (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="GitHub repository"
-              className="grid size-8 place-items-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+        </button>
+
+        <div className="flex flex-1 flex-col p-6">
+          <h3 className="font-display text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
+            {project.title}
+          </h3>
+          <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+            {project.description}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {project.tech.slice(0, 4).map((t) => (
+              <span
+                key={t}
+                className="rounded-md border border-border/70 bg-secondary/40 px-2 py-0.5 font-mono text-[11px] text-muted-foreground"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className="mt-6 flex items-center gap-2">
+            <button
+              onClick={onOpen}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/12 px-3 py-2 text-xs font-medium text-primary ring-1 ring-primary/25 transition-colors hover:bg-primary/20"
             >
-              <Github className="size-3.5" />
-            </a>
-          ) : null}
+              Case study
+              <ArrowUpRight className="size-3.5" />
+            </button>
+            {project.demoUrl ? (
+              <a
+                href={project.demoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-accent3/50 hover:text-accent3"
+              >
+                Live demo
+              </a>
+            ) : null}
+            {project.githubUrl ? (
+              <a
+                href={project.githubUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="GitHub repository"
+                className="grid size-8 place-items-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+              >
+                <Github className="size-3.5" />
+              </a>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </SpotlightCard>
     </motion.article>
   );
 }
@@ -99,6 +102,21 @@ export function Projects() {
     [projects],
   );
   const visible = filter === "All" ? projects : projects.filter((p) => p.tags?.includes(filter));
+
+  /* Close modal with Escape + lock body scroll while open */
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActive(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [active]);
 
   return (
     <section id="projects" className="relative scroll-mt-24 py-24 sm:py-32">

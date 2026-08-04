@@ -1,5 +1,6 @@
 import { Award, ExternalLink } from "lucide-react";
 
+import { ElectricBorder } from "@/components/effects/ElectricBorder";
 import { useSection } from "@/hooks/usePortfolioData";
 import { Reveal, SectionHeading } from "./Reveal";
 
@@ -22,8 +23,8 @@ export function Certifications() {
         />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {certifications.map((c, i) => (
-            <Reveal key={c.id} delay={i * 0.06}>
-              <div className="relative h-full overflow-hidden rounded-2xl p-6 glass glow-hover">
+            <Reveal key={c.id} delay={i * 0.06} className="h-full">
+              <ElectricBorder className="group h-full rounded-2xl p-6 glass glow-hover">
                 <div
                   className="pointer-events-none absolute -right-10 -top-10 size-28 rounded-full bg-primary/15 blur-2xl"
                   aria-hidden
@@ -59,7 +60,7 @@ export function Certifications() {
                     </a>
                   ) : null}
                 </div>
-              </div>
+              </ElectricBorder>
             </Reveal>
           ))}
         </div>
