@@ -133,19 +133,48 @@ export async function saveSettings(settings: Settings): Promise<void> {
 }
 
 /**
- * Diagnostic helper — writes a throwaway document to `settings/_test` and
- * returns a short status string so the admin UI can show what Firestore
- * actually returned. Used to distinguish rules errors from browser blocking.
+ * Diagnostic helper — checks the auth token, tests a Firestore READ and a WRITE,
+ * and returns a detailed status so the admin UI can pinpoint where the write is
+ * failing (rules vs auth token vs connection).
  */
 export async function testFirestoreWrite(): Promise<string> {
   const db = assertDb();
   const auth = getFirebaseAuth();
-  if (!auth?.currentUser) return "not-signed-in";
+  if (!auth) return "no-auth-sdk";
+  const user = auth.currentUser;
+  if (!user) return "not-signed-in";
+
+  // 1. Inspect the ID token: audience must be the Firestore project ID.
+  let tokenInfo = "no-token";
+  try {
+    const idToken = await user.getIdToken();
+    const payload = JSON.parse(atob(idToken.split(".")[1] ?? "")) as {
+      aud?: string;
+      exp?: number;
+    };
+    const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : "?";
+    tokenInfo = `aud=${payload.aud ?? "?"} exp=${exp}`;
+  } catch (e) {
+    tokenInfo = `token-error: ${e instanceof Error ? e.message : "unknown"}`;
+  }
+
+  // 2. Test a read (rules say `allow read: if true` — should always pass).
+  let read = "read-not-run";
+  try {
+    await getDoc(doc(db, "settings", "_test"));
+    read = "read-ok";
+  } catch (e) {
+    read = `read-fail: ${e instanceof Error ? e.message : "unknown"}`;
+  }
+
+  // 3. Test the write.
   try {
     await setDoc(doc(db, "settings", "_test"), { ok: true, at: Date.now() });
-    return "ok";
-  } catch (err) {
-    return err instanceof Error ? err.message : "unknown error";
+    return `write-ok | ${read} | ${tokenInfo}`;
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    const msg = e instanceof Error ? e.message : "unknown";
+    return `write-fail: ${code ?? msg} | ${read} | ${tokenInfo}`;
   }
 }
 /* ------------------------------------------------------------------ */
