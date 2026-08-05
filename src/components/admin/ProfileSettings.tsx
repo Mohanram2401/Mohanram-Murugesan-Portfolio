@@ -206,11 +206,10 @@ export function ProfileSettings() {
         </div>
         {testResult ? (
           <div
-            className={`mt-3 rounded-xl border p-3.5 font-mono text-xs break-all ${
-              testResult.startsWith("write-ok")
+            className={`mt-3 rounded-xl border p-3.5 font-mono text-xs break-all ${testResult.startsWith("write-ok")
                 ? "border-accent3/40 bg-accent3/10 text-accent3"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
-            }`}
+              }`}
           >
             {testResult.startsWith("write-ok")
               ? "OK — server-side write succeeded. Saving will work."
@@ -319,14 +318,12 @@ export function ProfileSettings() {
             role="switch"
             aria-checked={draft.showResume}
             onClick={() => set({ showResume: !draft.showResume })}
-            className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${
-              draft.showResume ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
-            }`}
+            className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${draft.showResume ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
+              }`}
           >
             <span
-              className={`size-5 rounded-full bg-background shadow transition-transform ${
-                draft.showResume ? "translate-x-5" : ""
-              }`}
+              className={`size-5 rounded-full bg-background shadow transition-transform ${draft.showResume ? "translate-x-5" : ""
+                }`}
             />
           </button>
           <span className="text-sm text-foreground">Show "View Resume" button in the hero</span>
@@ -353,14 +350,12 @@ export function ProfileSettings() {
                 role="switch"
                 aria-checked={draft.showStats}
                 onClick={() => set({ showStats: !draft.showStats })}
-                className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${
-                  draft.showStats ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
-                }`}
+                className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${draft.showStats ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
+                  }`}
               >
                 <span
-                  className={`size-5 rounded-full bg-background shadow transition-transform ${
-                    draft.showStats ? "translate-x-5" : ""
-                  }`}
+                  className={`size-5 rounded-full bg-background shadow transition-transform ${draft.showStats ? "translate-x-5" : ""
+                    }`}
                 />
               </button>
             </div>

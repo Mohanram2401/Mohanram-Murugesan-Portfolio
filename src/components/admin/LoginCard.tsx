@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { KeyRound, Loader2, Lock, Mail, X } from "lucide-react";
+import { KeyRound, Loader2, Lock, Mail, X, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,9 +10,13 @@ export function LoginCard({ closeButton }: { closeButton?: React.ReactNode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const field =
     "w-full rounded-xl border border-border/70 bg-secondary/30 py-3 pl-10 pr-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20";
+
+  const passwordField =
+    "w-full rounded-xl border border-border/70 bg-secondary/30 py-3 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,13 +68,21 @@ export function LoginCard({ closeButton }: { closeButton?: React.ReactNode }) {
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
-                className={field}
-                type="password"
+                className={passwordField}
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             </div>
             <button
               type="submit"

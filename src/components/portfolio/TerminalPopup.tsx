@@ -195,11 +195,11 @@ export function TerminalPopup() {
       ]);
     } else if (normalized === "projects") {
       typeLines([
-        { text: "Featured Deployments:", type: "output" },
-        { text: "  * SentinelOps - SOC Automation & Alert Enrichment platform", type: "output" },
-        { text: "  * ThreatGraph - Identity Attack Path Visualizer using graph technology", type: "output" },
-        { text: "  * PhishLens  - Sandbox detonations & LLM phishing triage tool", type: "output" },
-        { text: "  * LogPipe    - GitOps detection-as-code Sigma rule pipeline", type: "output" },
+        { text: "Featured Deployments & Labs:", type: "output" },
+        { text: "  * Wazuh SIEM   - Centralized monitoring, n8n automation, and Slack alerts", type: "output" },
+        { text: "  * Zabbix+pfSense - DDoS detection and automated email notifications", type: "output" },
+        { text: "  * Packet Ranger - Wireshark network traffic analysis lab", type: "output" },
+        { text: "  * RansomwareDet - Threat identification, YARA rules, and RK-Hunter scan", type: "output" },
       ]);
     } else if (normalized === "contact") {
       typeLines([

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MarqueeCarousel } from "@/components/effects/MarqueeCarousel";
 
 const R = 190;
 const CSS_SIZE = R * 2 + 80;
@@ -754,13 +755,29 @@ export function GlobeModal({ open, onClose }: GlobeModalProps) {
                       {selectedTool.cat}
                     </span>
                     {relatedIds.length > 0 && (
-                      <span className="text-muted-foreground/60">
-                        connects to{" "}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-wider mr-1">
+                          connects to:
+                        </span>
                         {relatedIds
-                          .map((id) => tools.find((t) => t.id === id)?.label)
-                          .filter(Boolean)
-                          .join(", ")}
-                      </span>
+                          .map((id) => tools.find((t) => t.id === id))
+                          .filter((t): t is NonNullable<typeof t> => !!t)
+                          .map((t) => (
+                            <span
+                              key={t.id}
+                              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all duration-200 hover:scale-105"
+                              style={{
+                                borderColor: `${t.color || catColors[t.cat] || "#05C3DD"}30`,
+                                background: `${t.color || catColors[t.cat] || "#05C3DD"}12`,
+                                color: t.color || catColors[t.cat] || "#05C3DD",
+                                boxShadow: `0 0 8px ${t.color || catColors[t.cat] || "#05C3DD"}10`,
+                              }}
+                            >
+                              <span className="size-1 rounded-full" style={{ backgroundColor: t.color || catColors[t.cat] || "#05C3DD" }} />
+                              {t.label}
+                            </span>
+                          ))}
+                      </div>
                     )}
                   </p>
                 </div>
@@ -790,6 +807,33 @@ export function GlobeModal({ open, onClose }: GlobeModalProps) {
               </p>
             </motion.div>
           )}
+          {/* Skills Marquee Slider at the bottom of the globe modal */}
+          <div className="absolute bottom-8 w-full max-w-7xl px-6 pointer-events-auto z-[206] overflow-hidden">
+            <MarqueeCarousel speed={25}>
+              {(copy) =>
+                tools.map((t) => (
+                  <button
+                    key={`${t.id}-${copy}`}
+                    onClick={() => setSelected(selected === t.id ? null : t.id)}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 font-mono text-xs transition-all duration-200 cursor-pointer ${
+                      selected === t.id 
+                        ? "border-primary bg-primary/10 text-primary shadow-[0_0_12px_rgba(5,195,221,0.3)]" 
+                        : "border-primary/20 bg-primary/5 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                    }`}
+                  >
+                    <span 
+                      className="size-1.5 rounded-full" 
+                      style={{ 
+                        backgroundColor: t.color || catColors[t.cat] || "#05C3DD",
+                        boxShadow: `0 0 6px ${t.color || catColors[t.cat] || "#05C3DD"}` 
+                      }} 
+                    />
+                    {t.label}
+                  </button>
+                ))
+              }
+            </MarqueeCarousel>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
