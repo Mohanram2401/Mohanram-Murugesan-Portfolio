@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
 export type FieldType = "text" | "textarea" | "number" | "list" | "url" | "checkbox";
@@ -14,6 +14,83 @@ export interface FieldDef {
 
 export const inputClass =
   "w-full rounded-xl border border-border/70 bg-secondary/30 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20";
+
+export const labelClass =
+  "mb-1.5 block font-mono text-[11px] tracking-wider text-muted-foreground uppercase";
+
+/* ------------------------------------------------------------------ */
+/* Tag / string list editor                                            */
+/* ------------------------------------------------------------------ */
+
+export function ListEditor({
+  items,
+  onChange,
+  placeholder = "Add an item…",
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string | undefined;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const add = () => {
+    const next = draft.trim();
+    if (!next) return;
+    onChange([...items, next]);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          className={inputClass}
+          value={draft}
+          placeholder={placeholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={add}
+          className="grid size-9 shrink-0 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+          aria-label="Add"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item, i) => (
+            <span
+              key={`${item}-${i}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/40 px-2.5 py-1 text-xs text-foreground"
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => onChange(items.filter((_, j) => j !== i))}
+                className="text-muted-foreground transition-colors hover:text-destructive"
+                aria-label={`Remove ${item}`}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Generic field grid                                                  */
+/* ------------------------------------------------------------------ */
 
 export function EntityForm({
   fields,
@@ -32,7 +109,7 @@ export function EntityForm({
         const wide = f.type === "textarea" || f.type === "list";
         return (
           <div key={f.key} className={wide ? "sm:col-span-2" : ""}>
-            <label className="mb-1.5 block font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
+            <label className={labelClass}>
               {f.label}
               {f.required ? <span className="ml-1 text-destructive">*</span> : null}
             </label>
@@ -46,101 +123,50 @@ export function EntityForm({
               />
             ) : f.type === "list" ? (
               <ListEditor
-                items={(value[f.key] as string[]) ?? []}
-                onChange={(items) => set(f.key, items)}
-                placeholder={f.placeholder ?? "Add item and press Enter"}
+                items={Array.isArray(value[f.key]) ? (value[f.key] as string[]) : []}
+                onChange={(next) => set(f.key, next)}
+                placeholder={f.placeholder}
+              />
+            ) : f.type === "number" ? (
+              <input
+                className={inputClass}
+                type="number"
+                placeholder={f.placeholder ?? ""}
+                value={(value[f.key] as number | undefined) ?? ""}
+                onChange={(e) =>
+                  set(f.key, e.target.value === "" ? undefined : Number(e.target.value))
+                }
               />
             ) : f.type === "checkbox" ? (
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-[var(--primary)]"
-                  checked={Boolean(value[f.key])}
-                  onChange={(e) => set(f.key, e.target.checked)}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(value[f.key])}
+                onClick={() => set(f.key, !value[f.key])}
+                className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${
+                  value[f.key] ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
+                }`}
+              >
+                <span
+                  className={`size-5 rounded-full bg-background shadow transition-transform ${
+                    value[f.key] ? "translate-x-5" : ""
+                  }`}
                 />
-                Enabled
-              </label>
+              </button>
             ) : (
               <input
                 className={inputClass}
-                type={f.type === "number" ? "number" : "text"}
+                type={f.type === "url" ? "url" : "text"}
                 placeholder={f.placeholder ?? ""}
-                value={(value[f.key] as string | number | undefined) ?? ""}
-                onChange={(e) =>
-                  set(f.key, f.type === "number" ? Number(e.target.value) : e.target.value)
-                }
+                value={(value[f.key] as string) ?? ""}
+                onChange={(e) => set(f.key, e.target.value)}
               />
             )}
 
-            {f.help ? <p className="mt-1 text-[11px] text-muted-foreground">{f.help}</p> : null}
+            {f.help ? <p className="mt-1.5 text-xs text-muted-foreground">{f.help}</p> : null}
           </div>
         );
       })}
-    </div>
-  );
-}
-
-export function ListEditor({
-  items,
-  onChange,
-  placeholder,
-}: {
-  items: string[];
-  onChange: (items: string[]) => void;
-  placeholder: string;
-}) {
-  const [draft, setDraft] = useState("");
-
-  const add = () => {
-    const v = draft.trim();
-    if (!v) return;
-    onChange([...items, v]);
-    setDraft("");
-  };
-
-  return (
-    <div>
-      <div className="flex gap-2">
-        <input
-          className={inputClass}
-          placeholder={placeholder}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={add}
-          className="shrink-0 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm text-primary"
-        >
-          Add
-        </button>
-      </div>
-      {items.length > 0 ? (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {items.map((item, i) => (
-            <span
-              key={`${item}-${i}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/40 px-2.5 py-1 text-xs text-foreground"
-            >
-              {item}
-              <button
-                type="button"
-                aria-label={`Remove ${item}`}
-                onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="size-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

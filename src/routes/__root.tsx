@@ -15,7 +15,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { ClickSpark } from "@/components/effects/ClickSpark";
 import { CursorGlow } from "@/components/effects/CursorGlow";
 import { BackToTop } from "@/components/portfolio/BackToTop";
+import { TerminalPopup } from "@/components/portfolio/TerminalPopup";
+import { Preloader } from "@/components/portfolio/Preloader";
 import { AuthProvider } from "@/hooks/useAuth";
+
 
 function NotFoundComponent() {
   return (
@@ -141,6 +144,8 @@ function RootComponent() {
         <CursorGlow />
         <ClickSpark />
         <BackToTop />
+        <TerminalPopup />
+        <Preloader />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <Toaster position="top-right" richColors />

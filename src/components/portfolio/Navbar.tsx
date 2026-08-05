@@ -1,10 +1,9 @@
-import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
-import { Menu, ShieldCheck, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Menu, ShieldCheck, X, Terminal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useSettings } from "@/hooks/usePortfolioData";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 const DEFAULT_LINKS = [
   { id: "about", label: "About" },
@@ -13,9 +12,6 @@ const DEFAULT_LINKS = [
   { id: "certifications", label: "Certifications" },
   { id: "contact", label: "Contact" },
 ];
-
-const SECRET_CLICKS = 5;
-const SECRET_WINDOW_MS = 3000;
 
 const linkVariants = {
   hidden: { opacity: 0, y: -14, scale: 0.9 },
@@ -38,7 +34,6 @@ const mobileVariants = {
 
 export function Navbar() {
   useAdminAccess();
-  const navigate = useNavigate();
   const { data: settings } = useSettings();
   const { scrollY, scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, {
@@ -49,8 +44,6 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("hero");
-  const [secretClicks, setSecretClicks] = useState(0);
-  const secretTimer = useRef<number | undefined>(undefined);
 
   const name = settings?.name?.trim() ? settings.name : "Mohanram";
   const title = settings?.title?.trim() ? settings.title : "Cybersecurity Engineer";
@@ -108,8 +101,6 @@ export function Navbar() {
     };
   }, [open]);
 
-  useEffect(() => () => window.clearTimeout(secretTimer.current), []);
-
   const go = (id: string) => {
     setOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -117,17 +108,6 @@ export function Navbar() {
 
   const onLogoClick = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setSecretClicks((count) => {
-      const next = count + 1;
-      window.clearTimeout(secretTimer.current);
-      secretTimer.current = window.setTimeout(() => setSecretClicks(0), SECRET_WINDOW_MS);
-      if (next >= SECRET_CLICKS) {
-        setSecretClicks(0);
-        void navigate({ to: "/admin" });
-        return 0;
-      }
-      return next;
-    });
   };
 
   return (
@@ -140,16 +120,14 @@ export function Navbar() {
 
       {/* Navbar */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          scrolled ? "py-2.5" : "py-4"
-        }`}
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "py-2.5" : "py-4"
+          }`}
       >
         <nav
-          className={`mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-500 sm:px-5 ${
-            scrolled
+          className={`mx-auto flex max-w-6xl items-center justify-between rounded-2xl px-4 py-2.5 transition-all duration-500 sm:px-5 ${scrolled
               ? "glass shadow-2xl shadow-black/40 ring-1 ring-border/40"
               : "border border-transparent"
-          }`}
+            }`}
           style={{ width: "min(100% - 2rem, 72rem)" }}
         >
           {/* Logo */}
@@ -175,7 +153,7 @@ export function Navbar() {
           <motion.div
             initial="hidden"
             animate="visible"
-            className="hidden items-center gap-1 md:flex"
+            className="hidden items-center gap-1 lg:flex"
           >
             {links.map((link, i) => {
               const isActive = active === link.id;
@@ -185,9 +163,8 @@ export function Navbar() {
                   custom={i}
                   variants={linkVariants}
                   onClick={() => go(link.id)}
-                  className={`group relative rounded-lg px-3.5 py-2 text-sm transition-colors ${
-                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`group relative rounded-lg px-3.5 py-2 text-sm transition-colors ${isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {isActive && (
                     <motion.span
@@ -204,37 +181,56 @@ export function Navbar() {
                     {link.label}
                     {/* underline grow on hover */}
                     <span
-                      className={`absolute -bottom-1 left-0 h-px bg-gradient-to-r from-primary to-accent2 transition-all duration-300 ${
-                        isActive ? "w-full" : "w-0 group-hover:w-full"
-                      }`}
+                      className={`absolute -bottom-1 left-0 h-px bg-gradient-to-r from-primary to-accent2 transition-all duration-300 ${isActive ? "w-full" : "w-0 group-hover:w-full"
+                        }`}
                     />
                   </span>
                 </motion.button>
               );
             })}
+            {/* Terminal Shell Button */}
+            <motion.button
+              custom={links.length}
+              variants={linkVariants}
+              onClick={() => window.dispatchEvent(new CustomEvent("open-terminal"))}
+              className="ml-3 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 font-mono text-xs text-primary transition-all hover:bg-primary/20 hover:shadow-[0_0_15px_-4px_var(--primary)] cursor-pointer"
+              title="Open Secure Shell"
+            >
+              <Terminal className="size-3.5" />
+              <span>Shell</span>
+            </motion.button>
           </motion.div>
 
-          {/* Mobile toggle */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.55, type: "spring", stiffness: 300, damping: 20 }}
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
-            className="grid size-9 place-items-center rounded-lg border border-border/70 text-foreground transition-colors hover:border-primary/50 md:hidden"
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={open ? "close" : "open"}
-                initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                transition={{ duration: 0.25 }}
-              >
-                {open ? <X className="size-4" /> : <Menu className="size-4" />}
-              </motion.span>
-            </AnimatePresence>
-          </motion.button>
+          {/* Mobile Shell & Toggle */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-terminal"))}
+              className="grid size-9 place-items-center rounded-lg border border-primary/25 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+              title="Open Secure Shell"
+            >
+              <Terminal className="size-4" />
+            </button>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.55, type: "spring", stiffness: 300, damping: 20 }}
+              onClick={() => setOpen((v) => !v)}
+              aria-label="Toggle menu"
+              className="grid size-9 place-items-center rounded-lg border border-border/70 text-foreground transition-colors hover:border-primary/50"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={open ? "close" : "open"}
+                  initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                  exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {open ? <X className="size-4" /> : <Menu className="size-4" />}
+                </motion.span>
+              </AnimatePresence>
+            </motion.button>
+          </div>
         </nav>
       </header>
 
@@ -246,7 +242,7 @@ export function Navbar() {
             animate={{ opacity: 1, clipPath: "circle(150% at calc(100% - 44px) 44px)" }}
             exit={{ opacity: 0, clipPath: "circle(0% at calc(100% - 44px) 44px)" }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-40 flex flex-col justify-center bg-background/95 px-8 backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-40 flex flex-col justify-center bg-background/95 px-8 backdrop-blur-2xl lg:hidden"
           >
             <motion.div
               className="pointer-events-none absolute right-0 bottom-0 size-[22rem] rounded-full bg-primary/10 blur-[120px]"
@@ -262,18 +258,16 @@ export function Navbar() {
                   exit="hidden"
                   variants={mobileVariants}
                   onClick={() => go(link.id)}
-                  className={`group flex items-center gap-4 rounded-2xl px-4 py-4 text-left text-2xl font-display font-semibold transition-colors ${
-                    active === link.id
+                  className={`group flex items-center gap-4 rounded-2xl px-4 py-4 text-left text-2xl font-display font-semibold transition-colors ${active === link.id
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-card/60"
-                  }`}
+                    }`}
                 >
                   <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                   {link.label}
                   <span
-                    className={`ml-auto h-px flex-1 max-w-16 bg-gradient-to-r from-primary/50 to-transparent transition-all duration-500 ${
-                      active === link.id ? "opacity-100" : "opacity-0 group-hover:opacity-60"
-                    }`}
+                    className={`ml-auto h-px flex-1 max-w-16 bg-gradient-to-r from-primary/50 to-transparent transition-all duration-500 ${active === link.id ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                      }`}
                   />
                 </motion.button>
               ))}

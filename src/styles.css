@@ -359,3 +359,17 @@
     transform: scale(1.6);
   }
 }
+
+@utility bg-terminal-crt {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.22) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(5, 195, 221, 0.04),
+    rgba(139, 92, 246, 0.02),
+    rgba(5, 195, 221, 0.04)
+  );
+  background-size: 100% 3px, 6px 100%;
+}
+

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 
 export interface AuthUser {
   uid: string;
@@ -10,43 +10,39 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOutUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const DEMO_KEY = "portfolio-demo-admin";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-    const auth = getFirebaseAuth();
-
-    if (!auth) {
-      // Demo mode: no Firebase keys yet, keep a local-only session.
-      const stored = window.sessionStorage.getItem(DEMO_KEY);
-      setUser(stored ? { uid: "demo", email: stored } : null);
+    // Initial session check
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({ uid: session.user.id, email: session.user.email ?? null });
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-      return;
-    }
+    });
 
-    let unsub: (() => void) | undefined;
-    void import("firebase/auth").then(({ onAuthStateChanged }) => {
-      if (!active) return;
-      unsub = onAuthStateChanged(auth, (fbUser) => {
-        setUser(fbUser ? { uid: fbUser.uid, email: fbUser.email } : null);
-        setLoading(false);
-      });
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({ uid: session.user.id, email: session.user.email ?? null });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
     });
 
     return () => {
-      active = false;
-      unsub?.();
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -54,27 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
-      configured: isFirebaseConfigured,
       signIn: async (email: string, password: string) => {
-        const auth = getFirebaseAuth();
-        if (!auth) {
-          if (password.length < 6) throw new Error("Password must be at least 6 characters.");
-          window.sessionStorage.setItem(DEMO_KEY, email);
-          setUser({ uid: "demo", email });
-          return;
-        }
-        const { signInWithEmailAndPassword } = await import("firebase/auth");
-        await signInWithEmailAndPassword(auth, email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
       },
       signOutUser: async () => {
-        const auth = getFirebaseAuth();
-        if (!auth) {
-          window.sessionStorage.removeItem(DEMO_KEY);
-          setUser(null);
-          return;
-        }
-        const { signOut } = await import("firebase/auth");
-        await signOut(auth);
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
       },
     }),
     [user, loading],
@@ -83,8 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+

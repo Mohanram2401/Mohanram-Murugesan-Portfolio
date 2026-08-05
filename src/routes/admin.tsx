@@ -32,11 +32,9 @@ export const Route = createFileRoute("/admin")({
       {
         name: "description",
         content:
-          "Secure content management dashboard for projects, experience, education, certifications and skills.",
+          "Content management dashboard for projects, experience, education, certifications and skills.",
       },
       { name: "robots", content: "noindex" },
-      { property: "og:title", content: "Admin Dashboard — Mohanram Murugesan" },
-      { property: "og:description", content: "Secure portfolio content management." },
     ],
   }),
   component: AdminPage,

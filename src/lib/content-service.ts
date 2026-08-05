@@ -1,88 +1,46 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
-
-import { getDb, getFirebaseAuth, isFirebaseConfigured } from "./firebase";
+  deleteItemOnServer,
+  saveItemOnServer,
+  saveSettingsOnServer,
+  testWriteOnServer,
+} from "./admin-server-fns";
+import { supabase } from "./supabase";
 import { mockData } from "./mock-data";
 import { defaultSettings } from "./profile";
 import type { Resume, Section, SectionTypeMap, Settings } from "./types";
+import { toCamelCaseKeys } from "./utils";
+
+/* ------------------------------------------------------------------ */
+/* Reads (client SDK, with static fallback)                            */
+/* ------------------------------------------------------------------ */
 
 /**
- * Reads a content collection from Firestore. When Firebase credentials are not
- * configured (or the request fails) the curated mock data is returned instead,
- * so the portfolio always renders complete content.
+ * Reads a content collection from Supabase. If the read fails (offline,
+ * browser blocking, etc.) the curated mock data is returned so the portfolio
+ * always renders complete content.
  */
 export async function fetchSection<S extends Section>(section: S): Promise<SectionTypeMap[S][]> {
-  const db = getDb();
-  if (!isFirebaseConfigured || !db) {
-    return mockData[section] as SectionTypeMap[S][];
-  }
   try {
-    const snap = await getDocs(query(collection(db, section), orderBy("order", "asc")));
-    if (snap.empty) return mockData[section] as SectionTypeMap[S][];
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SectionTypeMap[S]);
-  } catch {
-    try {
-      const snap = await getDocs(collection(db, section));
-      if (snap.empty) return mockData[section] as SectionTypeMap[S][];
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SectionTypeMap[S]);
-    } catch {
-      return mockData[section] as SectionTypeMap[S][];
+    const { data, error } = await supabase
+      .from(section)
+      .select("*")
+      .order("order", { ascending: true });
+      
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return toCamelCaseKeys<SectionTypeMap[S][]>(data);
     }
+  } catch (err) {
+    console.warn(`Failed to fetch section ${section} from Supabase, falling back to mock data.`, err);
   }
+  return [...(mockData[section] as unknown as SectionTypeMap[S][])].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
 }
 
-function assertDb() {
-  const db = getDb();
-  if (!db) {
-    throw new Error(
-      "Firebase is not configured. Add your VITE_FIREBASE_* keys to enable saving content.",
-    );
-  }
-  return db;
-}
+const SETTINGS_DOC = "profile";
 
-export async function createItem<S extends Section>(
-  section: S,
-  data: Omit<SectionTypeMap[S], "id">,
-): Promise<string> {
-  const db = assertDb();
-  const ref = await addDoc(collection(db, section), data as Record<string, unknown>);
-  return ref.id;
-}
-
-export async function updateItem<S extends Section>(
-  section: S,
-  id: string,
-  data: Partial<SectionTypeMap[S]>,
-): Promise<void> {
-  const db = assertDb();
-  const { id: _omit, ...rest } = data as Record<string, unknown> & { id?: string };
-  void _omit;
-  await updateDoc(doc(db, section, id), rest);
-}
-
-export async function deleteItem(section: Section, id: string): Promise<void> {
-  const db = assertDb();
-  await deleteDoc(doc(db, section, id));
-}
-
-/* ------------------------------------------------------------------ */
-/* Settings (profile, hero, visibility)                                */
-/* ------------------------------------------------------------------ */
-
-const SETTINGS_DOC = "settings/profile";
-
-/** Merges a partial Firestore document over the defaults so new fields never go missing. */
+/** Merges a partial settings document over the defaults so new fields never go missing. */
 function mergeSettings(partial: Partial<Settings>): Settings {
   return {
     ...defaultSettings,
@@ -99,163 +57,192 @@ function mergeSettings(partial: Partial<Settings>): Settings {
   };
 }
 
-/**
- * Reads the `settings/profile` document from Firestore. When Firebase is not
- * configured or the read fails, the curated default settings are returned so
- * the portfolio always renders complete content.
- */
+/** Reads the settings document; falls back to defaults. */
 export async function fetchSettings(): Promise<Settings> {
-  const db = getDb();
-  if (!isFirebaseConfigured || !db) return defaultSettings;
   try {
-    const [path, id] = SETTINGS_DOC.split("/") as [string, string];
-    const snap = await getDoc(doc(db, path, id));
-    if (!snap.exists()) return defaultSettings;
-    return mergeSettings(snap.data() as Partial<Settings>);
-  } catch {
-    return defaultSettings;
-  }
-}
-/** Persists the full settings document (replaces the previous one). */
-export async function saveSettings(settings: Settings): Promise<void> {
-  const db = assertDb();
-
-  // Verify the user is signed in before writing.
-  const auth = getFirebaseAuth();
-  if (!auth?.currentUser) {
-    throw new Error(
-      "You're not signed in to Firebase Auth. Please sign out and sign in again, then retry.",
-    );
-  }
-
-  const [path, id] = SETTINGS_DOC.split("/") as [string, string];
-  await setDoc(doc(db, path, id), settings);
-}
-
-/**
- * Diagnostic helper — checks the auth token, tests a Firestore READ and a WRITE,
- * and returns a detailed status so the admin UI can pinpoint where the write is
- * failing (rules vs auth token vs connection).
- */
-export async function testFirestoreWrite(): Promise<string> {
-  const db = assertDb();
-  const auth = getFirebaseAuth();
-  if (!auth) return "no-auth-sdk";
-  const user = auth.currentUser;
-  if (!user) return "not-signed-in";
-
-  // 1. Inspect the ID token: audience must be the Firestore project ID.
-  let tokenInfo = "no-token";
-  try {
-    const idToken = await user.getIdToken();
-    const payload = JSON.parse(atob(idToken.split(".")[1] ?? "")) as {
-      aud?: string;
-      exp?: number;
-    };
-    const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : "?";
-    tokenInfo = `aud=${payload.aud ?? "?"} exp=${exp}`;
-  } catch (e) {
-    tokenInfo = `token-error: ${e instanceof Error ? e.message : "unknown"}`;
-  }
-
-  // 2. Test a read (rules say `allow read: if true` — should always pass).
-  let read = "read-not-run";
-  try {
-    await getDoc(doc(db, "settings", "_test"));
-    read = "read-ok";
-  } catch (e) {
-    read = `read-fail: ${e instanceof Error ? e.message : "unknown"}`;
-  }
-
-  // 3. Test the write.
-  try {
-    await setDoc(doc(db, "settings", "_test"), { ok: true, at: Date.now() });
-    return `write-ok | ${read} | ${tokenInfo}`;
-  } catch (e) {
-    const code = (e as { code?: string }).code;
-    const msg = e instanceof Error ? e.message : "unknown";
-    return `write-fail: ${code ?? msg} | ${read} | ${tokenInfo}`;
-  }
-}
-/* ------------------------------------------------------------------ */
-/* File uploads (Cloudinary free tier)                                 */
-/* ------------------------------------------------------------------ */
-
-const CLOUDINARY_CLOUD_NAME = import.meta.env["VITE_CLOUDINARY_CLOUD_NAME"] as string | undefined;
-const CLOUDINARY_UPLOAD_PRESET = import.meta.env["VITE_CLOUDINARY_UPLOAD_PRESET"] as
-  string | undefined;
-
-/**
- * Uploads a file via Cloudinary's unsigned upload API (free tier — no Firebase
- * Storage needed, so no paid plan required) and returns the secure URL.
- *
- * Images go through the `image` endpoint, documents through the `raw` endpoint.
- * Requires a Cloudinary account with an unsigned upload preset:
- *   VITE_CLOUDINARY_CLOUD_NAME=<your cloud name>
- *   VITE_CLOUDINARY_UPLOAD_PRESET=<your unsigned preset>
- */
-export async function uploadFile(folder: string, file: File): Promise<string> {
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error(
-      "Cloudinary isn't configured. Add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET to your environment.",
-    );
-  }
-
-  const resourceType = file.type.startsWith("image/") ? "image" : "raw";
-  const endpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-
-  const body = new FormData();
-  body.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-  body.append("folder", folder);
-  body.append("file", file);
-
-  const res = await fetch(endpoint, { method: "POST", body });
-  if (!res.ok) {
-    let detail = `Upload failed (${res.status})`;
-    try {
-      const data = (await res.json()) as { error?: { message?: string } };
-      if (data.error?.message) detail = data.error.message;
-    } catch {
-      /* non-JSON error body */
+    const { data, error } = await supabase
+      .from("settings")
+      .select("*")
+      .eq("id", SETTINGS_DOC)
+      .single();
+      
+    if (error) throw error;
+    if (data) {
+      return mergeSettings(toCamelCaseKeys<Partial<Settings>>(data));
     }
-    throw new Error(detail);
+  } catch (err) {
+    console.warn("Failed to fetch settings from Supabase, falling back to defaults.", err);
   }
-
-  const data = (await res.json()) as { secure_url?: string; url?: string };
-  const url = data.secure_url ?? data.url;
-  if (!url) throw new Error("Upload succeeded but no URL was returned.");
-  return url;
+  return defaultSettings;
 }
 
-/* ------------------------------------------------------------------ */
-/* Resumes                                                             */
-/* ------------------------------------------------------------------ */
-
+/** Reads the `resumes` table; returns an empty list on failure. */
 export async function fetchResumes(): Promise<Resume[]> {
-  const db = getDb();
-  if (!isFirebaseConfigured || !db) return [];
   try {
-    const snap = await getDocs(query(collection(db, "resumes"), orderBy("order", "asc")));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Resume);
-  } catch {
-    return [];
+    const { data, error } = await supabase
+      .from("resumes")
+      .select("*")
+      .order("order", { ascending: true });
+      
+    if (error) throw error;
+    if (data) {
+      return toCamelCaseKeys<Resume[]>(data);
+    }
+  } catch (err) {
+    console.warn("Failed to fetch resumes from Supabase.", err);
   }
+  return [];
 }
+
+/* ------------------------------------------------------------------ */
+/* Writes (server-side, authenticated)                                  */
+/* ------------------------------------------------------------------ */
+
+/** Returns the signed-in admin's Supabase access token, or throws a clear error. */
+async function requireToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error("You're not signed in. Sign in from /admin, then retry.");
+  }
+  return session.access_token;
+}
+
+/** Persists the full settings document (profile, hero, visibility). */
+export async function saveSettings(settings: Settings): Promise<void> {
+  const token = await requireToken();
+  await saveSettingsOnServer({
+    data: { token, settings: settings as unknown as Record<string, unknown> },
+  });
+}
+
+export async function createItem<S extends Section>(
+  section: S,
+  data: Omit<SectionTypeMap[S], "id">,
+): Promise<string> {
+  const token = await requireToken();
+  const { id } = await saveItemOnServer({
+    data: {
+      token,
+      collection: section,
+      data: data as unknown as Record<string, unknown>,
+    },
+  });
+  return id;
+}
+
+export async function updateItem<S extends Section>(
+  section: S,
+  id: string,
+  data: Partial<SectionTypeMap[S]>,
+): Promise<void> {
+  const token = await requireToken();
+  const { id: _omit, ...rest } = data as Record<string, unknown> & { id?: string };
+  void _omit;
+  
+  if (id.startsWith("m-")) {
+    // This is mock data saved for the first time, perform an insert
+    await saveItemOnServer({
+      data: { token, collection: section, data: rest },
+    });
+    return;
+  }
+  
+  await saveItemOnServer({
+    data: { token, collection: section, id, data: rest },
+  });
+}
+
+export async function deleteItem(section: Section, id: string): Promise<void> {
+  if (id.startsWith("m-")) return; // Mock data is client-only
+  const token = await requireToken();
+  await deleteItemOnServer({ data: { token, collection: section, id } });
+}
+
+/* ------------------------------------------------------------------ */
+/* Resumes                                                              */
+/* ------------------------------------------------------------------ */
 
 export async function createResume(data: Omit<Resume, "id">): Promise<string> {
-  const db = assertDb();
-  const ref = await addDoc(collection(db, "resumes"), data as Record<string, unknown>);
-  return ref.id;
+  const token = await requireToken();
+  const { id } = await saveItemOnServer({
+    data: { token, collection: "resumes", data: data as unknown as Record<string, unknown> },
+  });
+  return id;
 }
 
 export async function updateResume(id: string, data: Partial<Resume>): Promise<void> {
-  const db = assertDb();
+  const token = await requireToken();
   const { id: _omit, ...rest } = data as Record<string, unknown> & { id?: string };
   void _omit;
-  await updateDoc(doc(db, "resumes", id), rest);
+  
+  if (id.startsWith("m-")) {
+    await saveItemOnServer({ data: { token, collection: "resumes", data: rest } });
+    return;
+  }
+  
+  await saveItemOnServer({ data: { token, collection: "resumes", id, data: rest } });
 }
 
 export async function deleteResume(id: string): Promise<void> {
-  const db = assertDb();
-  await deleteDoc(doc(db, "resumes", id));
+  if (id.startsWith("m-")) return; // Mock data is client-only
+  const token = await requireToken();
+  await deleteItemOnServer({ data: { token, collection: "resumes", id } });
+}
+
+/* ------------------------------------------------------------------ */
+/* Diagnostics                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Runs a server-side test write so the admin UI can surface the real error. */
+export async function testFirestoreWrite(): Promise<string> {
+  const token = await requireToken();
+  const res = await testWriteOnServer({ data: { token } });
+  return res.result;
+}
+
+/* ------------------------------------------------------------------ */
+/* Avatar upload (base64 data URL, no external storage)                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Resizes an image to max 400×400px and returns it as a base64 data URL.
+ * The data URL is stored directly in the `settings/profile` document, so no
+ * Cloudinary / Firebase Storage dependency is needed.
+ */
+export async function uploadAvatarAsBase64(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("Please select an image file.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Image must be under 10 MB.");
+
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read the image."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Could not load the image."));
+    el.src = dataUrl;
+  });
+
+  const MAX = 400;
+  const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not supported in this browser.");
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+export function getProjectId(): string {
+  // Extract project ref from supabase URL for display in diagnostics
+  const match = (import.meta.env.VITE_SUPABASE_URL ?? "").match(/https:\/\/([^.]+)\.supabase/);
+  return match?.[1] ?? "unknown";
 }

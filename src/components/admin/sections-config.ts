@@ -91,9 +91,15 @@ export const sectionConfigs: SectionConfig[] = [
     fields: [
       { key: "name", label: "Certification", type: "text", required: true },
       { key: "issuer", label: "Issuer", type: "text", required: true },
-      { key: "issuedDate", label: "Issued", type: "text", required: true, placeholder: "2024-04" },
+      {
+        key: "issuedDate",
+        label: "Issued date",
+        type: "text",
+        required: true,
+        placeholder: "2025",
+      },
       { key: "credentialUrl", label: "Credential URL", type: "url" },
-      { key: "badge", label: "Badge image URL", type: "url" },
+      { key: "badge", label: "Badge URL", type: "url" },
       { key: "order", label: "Sort order", type: "number" },
     ],
   },

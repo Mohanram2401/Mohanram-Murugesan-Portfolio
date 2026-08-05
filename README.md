@@ -1,94 +1,135 @@
-# Aura Portfolio
+# Aura Portfolio - Cyber Security & Software Engineering Portfolio
 
-Build a stunning, highly animated, ultra-modern, interactive, and professional developer portfolio web application with a secure Admin Dashboard backend.
+Aura Portfolio is a stunning, highly animated, ultra-modern, interactive, and professional developer portfolio web application built with **React**, **TypeScript**, and **Tailwind CSS**. It is integrated with a secure **Supabase** backend for CRUD content management and **Cloudinary** for drag-and-drop resume hosting.
 
-### Modern Visual Aesthetic & Color Palette
+## 🚀 Key Visual & Interactive Features
 
-- Design Style: High-end dark mode aesthetics with sleek glassmorphism, subtle glowing accents, clean typography, and spacious layout.
+1. **Cybersecurity Startup Preloader:**
+   * A sequential checklist that simulates firewall diagnostics, database handshakes, and decryption progress from `0%` to `100%` with green checkmarks (`[✓] OK`) before transitioning into the main viewport.
 
-- Color Palette:
+2. **Interactive Security Shell Bot (Terminal):**
+   * Floating at the bottom-left corner of the screen is a robot-themed chatbot helper.
+   * Features bot reply icons, a blinking cursor, CRT scanlines, and fluid layout scaling (supports Minimize, Restart Connection, and Maximize to Center Fullscreen).
+   * Supports command executions: `help`, `about`, `projects`, `whoami`, `contact` (interactive questionnaire sequence dispatched directly to Supabase).
 
-  - Background: Very dark slate/black (`#0B0F17`)
+3. **Desktop & Mobile Navbar triggers:**
+   * Header contains a matching Terminal trigger button that toggles the Shell helper from anywhere.
+   * Leverages a tablet-friendly breakpoint wrap (`lg:hidden`) to prevent layout clipping when browser DevTools are open.
 
-  - Surface/Cards: Glassmorphism translucent dark slate (`#151C2C` with blur/opacity)
+4. **3D Skills Globe:**
+   * Hover-pausable canvas networks featuring orbiting glow particles.
+   * Completely borderless modal layout dismissing seamlessly via the `ESC` key or backdrop clicks.
 
-  - Primary Accent: Radiant Neon Electric Blue (`#3B82F6`)
-
-  - Secondary Accent: Cyber Purple (`#8B5CF6`) or Vibrant Cyan (`#06B6D4`)
-
-  - Text: Bright White (`#F9FAFB`) for headers, Soft Muted Gray (`#9CA3AF`) for body text
-
-- UI Components: Lucide React icons, Tailwind CSS styling, Framer Motion transitions/effects, glowing borders on hover, dynamic gradient text, and responsive cards.
-
----
-
-### Key Application Features & Architecture
-
-#### 1. Public Portfolio Page (Highly Animated & Engaging)
-
-Include smooth scrolling nav bar, scroll progress indicator, and section reveal animations.
-
-- **Hero Section:** Dynamic animated headline, high-impact subtitle, interactive CTA buttons ("Explore Projects", "View Resume", "Get in Touch"), interactive background canvas/particles or subtle floating gradient orbs.
-
-- **About & Skills:** Visual tech-stack radar/grid with dynamic progress bars or glowing skill tags categorized by Frontend, Backend, Database, and Tools.
-
-- **Experience & Education:** Interactive vertical timeline with expandable nodes, glowing bullet points, company logos/placeholders, and dates.
-
-- **Projects Showcase:** Interactive project grid with tag filters (e.g., React, Node, AI, Firebase). Each card features project preview image/placeholder, interactive live demo & GitHub buttons, key tech badges, and a modal view for deeper project details.
-
-- **Certifications:** Modern badge-style showcase with credential links and verification dates.
-
-- **Contact Section:** Functional contact form with success animations, along with direct links to GitHub, LinkedIn, Email, and social platforms.
-
-#### 2. Protected Admin Dashboard (`/admin`)
-
-- **Authentication:** Firebase Auth modal/page for secure email/password login. Route guards to protect the `/admin` page.
-
-- **Content Management (Full CRUD Operations):**
-
-  - Ability to Add, Edit, Update, and Delete Projects, Experience entries, Education history, Certifications, and Skills in real-time.
-
-  - Image upload support or image URL input fields for project thumbnails and badges.
-
-  - Form validation with interactive toast notification alerts for success/failure.
-
-#### 3. Database & Backend Integration (Firebase)
-
-- Integrate Firebase Firestore as the primary database for storing dynamic content (Projects, Skills, Experience, Education, Certifications).
-
-- Include a `firebase.ts` configuration setup that loads credentials cleanly from environment variables (`import.meta.env`).
-
-- Set up dynamic fallback mock data so the app looks complete immediately while waiting for Firebase configuration keys to be populated.
+5. **Secured Admin Panel (`/admin`):**
+   * Route-guard authentication connected to Supabase Auth.
+   * Fully validated management forms for Projects, Experiences, Education details, and Certifications.
+   * Streamlined Resume manager with automated drag-and-drop Cloudinary uploading.
 
 ---
 
-### Instructions for Code Generation
+## 🛠️ Technology Stack
 
-- Build all components using React, TypeScript, Tailwind CSS, and Lucide React icons.
+* **Frontend:** React, TypeScript, Tailwind CSS, Framer Motion, Lucide Icons.
+* **Backend Database & Auth:** Supabase (PostgreSQL).
+* **Asset Storage:** Cloudinary.
+* **Routing:** TanStack Router & Start.
 
-- Use Framer Motion or Tailwind animations for entry transitions, hover lifts, glowing card states, and smooth modals.
+---
 
-- Ensure 100% responsiveness across desktop, tablet, and mobile browsers.
+## ⚙️ Development Setup & Configuration
 
-- Keep code modular with clean separation between UI components, Firebase service layers, and page routes (Public Home vs. Admin Panel).
+### 1. Database Setup (Supabase)
+Initialize your Supabase database by running the following queries inside your Supabase **SQL Editor**:
 
-This project was built with [Lovable](https://lovable.dev).
+```sql
+-- Create Contacts Table
+CREATE TABLE public.contacts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-## Build with Lovable
+-- Create Settings Table
+CREATE TABLE public.settings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    roles TEXT[] NOT NULL,
+    bio TEXT NOT NULL,
+    avatar TEXT NOT NULL,
+    email TEXT NOT NULL,
+    github TEXT,
+    linkedin TEXT,
+    resume_url TEXT,
+    show_resume BOOLEAN DEFAULT true,
+    show_stats BOOLEAN DEFAULT true,
+    stats JSONB DEFAULT '[]'::jsonb,
+    visible_sections JSONB DEFAULT '{"about":true,"experience":true,"projects":true,"certifications":true,"contact":true}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/bf740d1b-744e-4715-80be-344316a4cc85).
+-- Create Resumes Table
+CREATE TABLE public.resumes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_type TEXT DEFAULT 'pdf',
+    active BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.resumes ENABLE ROW LEVEL SECURITY;
 
-## Development
+-- Set up Public Reading policies
+CREATE POLICY "Allow public read access" ON public.settings FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.resumes FOR SELECT USING (true);
+CREATE POLICY "Allow public insert contacts" ON public.contacts FOR INSERT WITH CHECK (true);
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+-- Set up Authenticated Admin policies
+CREATE POLICY "Admin full write settings" ON public.settings FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Admin full write resumes" ON public.resumes FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Admin full read contacts" ON public.contacts FOR SELECT USING (auth.role() = 'authenticated');
+```
 
+Create a login user inside the **Authentication** panel in your Supabase dashboard to access the `/admin` portal.
+
+### 2. File Storage (Cloudinary)
+1. Set up an unsigned upload preset inside your Cloudinary settings dashboard.
+2. Select raw file formats as allowed extensions (or leave open to accept PDF/TXT resumes).
+
+### 3. Environment Variables Configuration
+Create a `.env.local` file inside the root directory and populate it with your credentials:
+
+```env
+VITE_SUPABASE_URL=https://<your-project-id>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_CLOUDINARY_CLOUD_NAME=<your-cloud-name>
+VITE_CLOUDINARY_UPLOAD_PRESET=<your-preset-name>
+```
+
+---
+
+## 💻 Local Execution
+
+### 1. Installation
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
+```
+
+### 2. Run Local Development Server
+```sh
 npm run dev
 ```
+
+### 3. Build & Compile for Production
+```sh
+npm run build
+```
+
+---
+*Created by Mohanram Murugesan. Built with React, Tailwind CSS, & Framer Motion.*

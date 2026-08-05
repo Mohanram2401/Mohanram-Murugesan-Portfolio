@@ -476,7 +476,7 @@ function draw(ctx: CanvasRenderingContext2D, angle: number) {
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  /* Orbital rings */
+  /* Orbital rings & glowing particles */
   const orbitalAngle = angle * 0.4;
   for (const [tiltX, tiltY, radiusMul] of [
     [50, 20, 1.35],
@@ -485,8 +485,8 @@ function draw(ctx: CanvasRenderingContext2D, angle: number) {
   ] as const) {
     const radT = (tiltX * Math.PI) / 180;
     const radY = ((tiltY + orbitalAngle) * Math.PI) / 180;
-    ctx.strokeStyle = "rgba(139,92,246,0.12)";
-    ctx.lineWidth = 0.7;
+    ctx.strokeStyle = "rgba(139,92,246,0.15)";
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
     for (let deg = 0; deg <= 360; deg += 3) {
       const rDeg = (deg * Math.PI) / 180;
@@ -504,6 +504,39 @@ function draw(ctx: CanvasRenderingContext2D, angle: number) {
       else ctx.lineTo(px, py);
     }
     ctx.stroke();
+
+    // Orbiting packet particle dot
+    const dotDeg = (angle * 1.5) % 360;
+    const rDot = (dotDeg * Math.PI) / 180;
+    const dx = Math.cos(rDot) * R * radiusMul;
+    const dy = Math.sin(rDot) * R * radiusMul * Math.cos(radT);
+    const dz = Math.sin(rDot) * R * radiusMul * Math.sin(radT);
+    const cosY = Math.cos(radY);
+    const sinY = Math.sin(radY);
+    const dnx = dx * cosY + dz * sinY;
+    const dnz = -dx * sinY + dz * cosY;
+    
+    if (dnz > -R * 0.2) {
+      const dpx = HALF + dnx;
+      const dpy = HALF + dy;
+      const pulseSize = 3 + Math.sin(angle * 0.08) * 1.5;
+      
+      const glow = ctx.createRadialGradient(dpx, dpy, 0, dpx, dpy, pulseSize * 3);
+      glow.addColorStop(0, "rgba(5, 195, 221, 1)");
+      glow.addColorStop(0.3, "rgba(139, 92, 246, 0.6)");
+      glow.addColorStop(1, "transparent");
+      
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(dpx, dpy, pulseSize * 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Core dot
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(dpx, dpy, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   /* Specular highlight */
@@ -626,18 +659,6 @@ export function GlobeModal({ open, onClose }: GlobeModalProps) {
             className="absolute inset-0 bg-background/92 backdrop-blur-2xl"
             onClick={onClose}
           />
-
-          <motion.button
-            initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            exit={{ opacity: 0, scale: 0.5, rotate: 180 }}
-            transition={{ delay: 0.5, type: "spring", stiffness: 260, damping: 22 }}
-            onClick={onClose}
-            className="absolute right-5 top-5 z-[210] grid size-11 place-items-center rounded-full border border-primary/30 bg-background/60 text-muted-foreground shadow-xl backdrop-blur transition-all hover:border-primary/60 hover:text-foreground"
-            aria-label="Close globe"
-          >
-            <X className="size-4" />
-          </motion.button>
 
           <motion.div
             initial={{ scale: 0.15, opacity: 0, y: 60 }}
@@ -765,7 +786,7 @@ export function GlobeModal({ open, onClose }: GlobeModalProps) {
                 Skills & Arsenal
               </h3>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                Click any node to explore — hover the globe to pause.
+                Click any node to explore — hover the globe to pause — press <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-foreground ring-1 ring-border">ESC</kbd> to exit.
               </p>
             </motion.div>
           )}

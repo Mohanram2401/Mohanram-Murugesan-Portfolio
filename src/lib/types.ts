@@ -13,8 +13,8 @@ export type VisibleSectionKey = Section | "about" | "contact";
 export type VisibleSections = Record<VisibleSectionKey, boolean>;
 
 /**
- * Profile + hero + visibility configuration, persisted to a single Firestore
- * document (`settings/profile`). The portfolio and admin panel both read this.
+ * Profile + hero + visibility configuration. The portfolio reads this via
+ * `fetchSettings` (static content in `src/lib/profile.ts`).
  */
 export type Settings = {
   name: string;

@@ -1,19 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2, Upload, User, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Upload, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSettings } from "@/hooks/usePortfolioData";
-import { saveSettings, testFirestoreWrite, uploadFile } from "@/lib/content-service";
-import { getFirebaseAuth, isCloudinaryConfigured, isFirebaseConfigured } from "@/lib/firebase";
+import { saveSettings, testFirestoreWrite, uploadAvatarAsBase64 } from "@/lib/content-service";
 import type { Settings, Stat } from "@/lib/types";
-import { inputClass, ListEditor } from "./EntityForm";
-
-const labelClass =
-  "mb-1.5 block font-mono text-[11px] tracking-wider text-muted-foreground uppercase";
+import { inputClass, labelClass, ListEditor } from "./EntityForm";
 
 /* ------------------------------------------------------------------ */
-/* File upload helper                                                  */
+/* Avatar upload (base64, stored in the settings doc)                   */
 /* ------------------------------------------------------------------ */
 
 function AvatarUpload({
@@ -29,25 +25,15 @@ function AvatarUpload({
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const pick = useCallback(() => inputRef.current?.click(), []);
-
   const handleFile = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file.");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be under 5 MB.");
-        return;
-      }
       setUploading(true);
       try {
-        const url = await uploadFile("avatars", file);
-        onUploaded(url);
-        toast.success("Photo uploaded");
+        const dataUrl = await uploadAvatarAsBase64(file);
+        onUploaded(dataUrl);
+        toast.success('Photo ready — click "Save changes" to persist.');
         setError(false);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Upload failed");
@@ -83,26 +69,15 @@ function AvatarUpload({
       <div>
         <button
           type="button"
-          onClick={pick}
-          disabled={uploading || !isCloudinaryConfigured}
-          className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
         >
           <Upload className="size-4" />
-          {uploading ? "Uploading…" : src && !error ? "Change photo" : "Upload photo"}
+          {uploading ? "Processing…" : "Upload photo"}
         </button>
-        {src && !error ? (
-          <button
-            type="button"
-            onClick={() => onUploaded("")}
-            className="ml-2 inline-flex items-center gap-1 rounded-xl border border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-destructive/60 hover:text-destructive"
-          >
-            <X className="size-3" /> Remove
-          </button>
-        ) : null}
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {!isCloudinaryConfigured
-            ? "Set VITE_CLOUDINARY_CLOUD_NAME & VITE_CLOUDINARY_UPLOAD_PRESET to enable uploads."
-            : "JPG, PNG or WebP. Max 5 MB. Uploaded via Cloudinary (free tier)."}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Max 10 MB — resized to 400×400 and stored in the database.
         </p>
         <input
           ref={inputRef}
@@ -117,54 +92,45 @@ function AvatarUpload({
 }
 
 /* ------------------------------------------------------------------ */
-/* Stats editor                                                        */
+/* Stats editor                                                         */
 /* ------------------------------------------------------------------ */
 
-function StatsEditor({ stats, onChange }: { stats: Stat[]; onChange: (stats: Stat[]) => void }) {
-  const update = (i: number, key: "label" | "value", v: string) =>
-    onChange(stats.map((s, idx) => (idx === i ? { ...s, [key]: v } : s)));
+function StatsEditor({ stats, onChange }: { stats: Stat[]; onChange: (next: Stat[]) => void }) {
+  const set = (i: number, patch: Partial<Stat>) =>
+    onChange(stats.map((s, j) => (j === i ? { ...s, ...patch } : s)));
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        The hero stats row (e.g. "Alerts triaged — 12k+"). Change the text or remove cards entirely.
-      </p>
-      {stats.length > 0 ? (
-        <div className="grid gap-3">
-          {stats.map((s, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1.2fr_auto]">
-              <input
-                className={inputClass}
-                placeholder="Value, e.g. 12k+"
-                value={s.value}
-                onChange={(e) => update(i, "value", e.target.value)}
-              />
-              <input
-                className={inputClass}
-                placeholder="Label, e.g. Alerts triaged"
-                value={s.label}
-                onChange={(e) => update(i, "label", e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => onChange(stats.filter((_, idx) => idx !== i))}
-                aria-label="Remove stat"
-                className="grid size-10 place-items-center self-center rounded-xl border border-border/70 text-muted-foreground transition-colors hover:border-destructive/60 hover:text-destructive"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </div>
-          ))}
+      {stats.map((stat, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="grid flex-1 gap-2 sm:grid-cols-2">
+            <input
+              className={inputClass}
+              placeholder="Label"
+              value={stat.label}
+              onChange={(e) => set(i, { label: e.target.value })}
+            />
+            <input
+              className={inputClass}
+              placeholder="Value"
+              value={stat.value}
+              onChange={(e) => set(i, { value: e.target.value })}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(stats.filter((_, j) => j !== i))}
+            className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/70 text-muted-foreground transition-colors hover:border-destructive/60 hover:text-destructive"
+            aria-label="Remove stat"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
-      ) : (
-        <p className="rounded-xl border border-border/60 bg-secondary/30 p-3.5 text-sm text-muted-foreground">
-          No stats configured — the stats row is hidden until you add one.
-        </p>
-      )}
+      ))}
       <button
         type="button"
         onClick={() => onChange([...stats, { label: "", value: "" }])}
-        className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
+        className="inline-flex items-center gap-2 rounded-xl border border-border/70 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
       >
         <Plus className="size-4" /> Add stat
       </button>
@@ -173,35 +139,23 @@ function StatsEditor({ stats, onChange }: { stats: Stat[]; onChange: (stats: Sta
 }
 
 /* ------------------------------------------------------------------ */
-/* Profile settings                                                    */
+/* Main editor                                                          */
 /* ------------------------------------------------------------------ */
 
 export function ProfileSettings() {
   const queryClient = useQueryClient();
   const { data } = useSettings();
   const [draft, setDraft] = useState<Settings | null>(null);
-  const [testStatus, setTestStatus] = useState<{
-    running: boolean;
-    result?: string;
-  }>({ running: false });
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (data) setDraft(data);
   }, [data]);
 
-  const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
-    setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-
   const save = useMutation({
     mutationFn: (values: Settings) => {
       if (!values.name.trim()) throw new Error("Name is required");
-      // Fail fast with a clear message if Firebase Auth is not signed in.
-      const auth = getFirebaseAuth();
-      if (!auth?.currentUser) {
-        throw new Error(
-          "You're not signed in to Firebase Auth. Please sign out and sign in again, then retry.",
-        );
-      }
       return saveSettings(values);
     },
     onSuccess: async () => {
@@ -212,215 +166,219 @@ export function ProfileSettings() {
   });
 
   const runTest = async () => {
-    setTestStatus({ running: true });
-    const result = await testFirestoreWrite();
-    setTestStatus({ running: false, result });
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await testFirestoreWrite();
+      setTestResult(result);
+    } catch (e) {
+      setTestResult(`test-error: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally {
+      setTesting(false);
+    }
   };
 
-  if (!draft) {
-    return (
-      <div className="grid place-items-center py-16 text-muted-foreground">
-        <Loader2 className="size-5 animate-spin" />
-      </div>
-    );
-  }
+  if (!draft) return null;
+
+  const set = (patch: Partial<Settings>) => setDraft({ ...draft, ...patch });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-xl font-semibold text-foreground">Profile & Hero</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Personal details, social links and the hero section content.
-          {!isFirebaseConfigured ? " · Firebase isn't configured — changes won't persist." : ""}
-        </p>
-      </div>
-
-      {/* Profile */}
-      <div className="space-y-5 rounded-2xl p-6 glass">
-        <h3 className="font-display text-sm font-semibold tracking-wide text-foreground uppercase">
-          Profile
-        </h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <AvatarUpload
-              name={draft.name}
-              src={draft.avatar}
-              onUploaded={(url) => set("avatar", url)}
-            />
-          </div>
-
+    <section className="space-y-6">
+      {/* Connection test */}
+      <div className="rounded-2xl border border-border/60 bg-secondary/30 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <label className={labelClass}>Name</label>
-            <input
-              className={inputClass}
-              value={draft.name}
-              onChange={(e) => set("name", e.target.value)}
-            />
+            <h2 className="font-display text-lg font-bold text-foreground">Firestore connection</h2>
+            <p className="text-sm text-muted-foreground">
+              Verifies an authenticated server-side write against your Firebase project. Run this
+              first if saving fails.
+            </p>
           </div>
-          <div>
-            <label className={labelClass}>Job title</label>
-            <input
-              className={inputClass}
-              value={draft.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Roles to show</label>
-            <ListEditor
-              items={draft.roles}
-              onChange={(roles) => set("roles", roles)}
-              placeholder="Add a role and press Enter"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Tagline</label>
-            <textarea
-              className={`${inputClass} min-h-24 resize-y`}
-              value={draft.tagline}
-              onChange={(e) => set("tagline", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Location</label>
-            <input
-              className={inputClass}
-              value={draft.location}
-              onChange={(e) => set("location", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Email</label>
-            <input
-              className={inputClass}
-              type="email"
-              value={draft.email}
-              onChange={(e) => set("email", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>GitHub URL</label>
-            <input
-              className={inputClass}
-              placeholder="https://github.com/..."
-              value={draft.github}
-              onChange={(e) => set("github", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>LinkedIn URL</label>
-            <input
-              className={inputClass}
-              placeholder="https://linkedin.com/in/..."
-              value={draft.linkedin}
-              onChange={(e) => set("linkedin", e.target.value)}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>About (one paragraph per line)</label>
-            <textarea
-              className={`${inputClass} min-h-32 resize-y`}
-              value={draft.about.join("\n")}
-              onChange={(e) =>
-                set(
-                  "about",
-                  e.target.value
-                    .split("\n")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                )
-              }
-            />
-          </div>
+          <button
+            type="button"
+            onClick={runTest}
+            disabled={testing}
+            className="inline-flex items-center gap-2 rounded-xl border border-accent3/40 bg-accent3/10 px-4 py-2 text-sm font-medium text-accent3 transition-colors hover:bg-accent3/20 disabled:opacity-50"
+          >
+            {testing ? <Loader2 className="size-4 animate-spin" /> : null}
+            Test Firestore write
+          </button>
         </div>
-      </div>
-
-      {/* Hero */}
-      <div className="space-y-5 rounded-2xl p-6 glass">
-        <h3 className="font-display text-sm font-semibold tracking-wide text-foreground uppercase">
-          Hero
-        </h3>
-
-        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/30 p-4">
-          <span>
-            <span className="block text-sm font-medium text-foreground">Show stats row</span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              The "Alerts triaged / Detections shipped / ..." cards under the hero intro.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="size-4 accent-[var(--primary)]"
-            checked={draft.showStats}
-            onChange={(e) => set("showStats", e.target.checked)}
-          />
-        </label>
-
-        {draft.showStats ? (
-          <StatsEditor stats={draft.stats} onChange={(stats) => set("stats", stats)} />
-        ) : null}
-
-        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/30 p-4">
-          <span>
-            <span className="block text-sm font-medium text-foreground">
-              Show "View Resume" button
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              Links to the active resume. Upload resumes in the Resumes tab.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="size-4 accent-[var(--primary)]"
-            checked={draft.showResume}
-            onChange={(e) => set("showResume", e.target.checked)}
-          />
-        </label>
-      </div>
-
-      {/* Firestore diagnostics */}
-      <div className="space-y-3 rounded-2xl border border-border/60 p-6">
-        <h3 className="font-display text-sm font-semibold tracking-wide text-foreground uppercase">
-          Firestore connection test
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Checks whether a write to your Firestore project actually works. Run this if saving fails
-          with "Missing or insufficient permissions".
-        </p>
-        <button
-          type="button"
-          onClick={runTest}
-          disabled={testStatus.running}
-          className="inline-flex items-center gap-2 rounded-xl border border-accent3/40 bg-accent3/10 px-4 py-2 text-sm font-medium text-accent3 transition-colors hover:bg-accent3/20 disabled:opacity-50"
-        >
-          {testStatus.running ? <Loader2 className="size-4 animate-spin" /> : null}
-          Test Firestore write
-        </button>
-        {testStatus.result ? (
+        {testResult ? (
           <div
-            className={`rounded-xl border p-3.5 font-mono text-xs break-all ${
-              testStatus.result === "ok"
+            className={`mt-3 rounded-xl border p-3.5 font-mono text-xs break-all ${
+              testResult.startsWith("write-ok")
                 ? "border-accent3/40 bg-accent3/10 text-accent3"
                 : "border-destructive/40 bg-destructive/10 text-destructive"
             }`}
           >
-            {testStatus.result === "ok"
-              ? "OK — write succeeded. Saving should work now."
-              : `Failed: ${testStatus.result}`}
+            {testResult.startsWith("write-ok")
+              ? "OK — server-side write succeeded. Saving will work."
+              : `Failed: ${testResult}`}
           </div>
         ) : null}
+      </div>
+
+      {/* Profile & hero */}
+      <div className="rounded-2xl border border-border/60 bg-secondary/30 p-5">
+        <h2 className="font-display text-lg font-bold text-foreground">Profile & hero</h2>
+        <div className="mt-5 space-y-4">
+          <AvatarUpload
+            name={draft.name}
+            src={draft.avatar}
+            onUploaded={(avatar) => set({ avatar })}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Name *</label>
+              <input
+                className={inputClass}
+                value={draft.name}
+                onChange={(e) => set({ name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Title *</label>
+              <input
+                className={inputClass}
+                value={draft.title}
+                onChange={(e) => set({ title: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Roles</label>
+            <ListEditor
+              items={draft.roles}
+              onChange={(roles) => set({ roles })}
+              placeholder="Add a role…"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Tagline</label>
+              <input
+                className={inputClass}
+                value={draft.tagline}
+                onChange={(e) => set({ tagline: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Location</label>
+              <input
+                className={inputClass}
+                value={draft.location}
+                onChange={(e) => set({ location: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Links */}
+      <div className="rounded-2xl border border-border/60 bg-secondary/30 p-5">
+        <h2 className="font-display text-lg font-bold text-foreground">Links</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass}>Email</label>
+            <input
+              className={inputClass}
+              value={draft.email}
+              onChange={(e) => set({ email: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>GitHub</label>
+            <input
+              className={inputClass}
+              value={draft.github}
+              onChange={(e) => set({ github: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>LinkedIn</label>
+            <input
+              className={inputClass}
+              value={draft.linkedin}
+              onChange={(e) => set({ linkedin: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Resume URL</label>
+            <input
+              className={inputClass}
+              placeholder="https://…"
+              value={draft.resumeUrl}
+              onChange={(e) => set({ resumeUrl: e.target.value })}
+            />
+          </div>
+        </div>
+        <label className="mt-5 flex cursor-pointer items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={draft.showResume}
+            onClick={() => set({ showResume: !draft.showResume })}
+            className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${
+              draft.showResume ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
+            }`}
+          >
+            <span
+              className={`size-5 rounded-full bg-background shadow transition-transform ${
+                draft.showResume ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+          <span className="text-sm text-foreground">Show "View Resume" button in the hero</span>
+        </label>
+      </div>
+
+      {/* About & stats */}
+      <div className="rounded-2xl border border-border/60 bg-secondary/30 p-5">
+        <h2 className="font-display text-lg font-bold text-foreground">About & stats</h2>
+        <div className="mt-5 space-y-6">
+          <div>
+            <label className={labelClass}>About paragraphs</label>
+            <ListEditor
+              items={draft.about}
+              onChange={(about) => set({ about })}
+              placeholder="Add a paragraph…"
+            />
+          </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className={labelClass}>Hero stats</label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={draft.showStats}
+                onClick={() => set({ showStats: !draft.showStats })}
+                className={`flex h-7 w-12 items-center rounded-full border px-0.5 transition-colors ${
+                  draft.showStats ? "border-primary bg-primary" : "border-border/70 bg-secondary/50"
+                }`}
+              >
+                <span
+                  className={`size-5 rounded-full bg-background shadow transition-transform ${
+                    draft.showStats ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
+            <StatsEditor stats={draft.stats} onChange={(stats) => set({ stats })} />
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end">
         <button
           onClick={() => save.mutate(draft)}
           disabled={save.isPending}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-background disabled:opacity-70"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-background disabled:opacity-60"
         >
           {save.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           Save changes
         </button>
       </div>
-    </div>
+    </section>
   );
 }

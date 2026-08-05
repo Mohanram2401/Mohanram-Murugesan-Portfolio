@@ -238,7 +238,7 @@ export function Hero() {
           >
             <OrbitImages
               images={ORBIT_IMAGES}
-              radius={168}
+              radius={188}
               size={44}
               duration={36}
               center={
@@ -248,7 +248,7 @@ export function Hero() {
                   aria-label="Open skills globe"
                 >
                   <ElectricBorder className="rounded-full" ringWidth={2}>
-                    <div className="relative size-44 overflow-hidden rounded-full bg-gradient-to-br from-primary/25 via-accent2/20 to-accent3/15 p-1 shadow-[0_0_60px_-12px_var(--primary)] transition-transform duration-500 group-hover:scale-[1.03]">
+                    <div className="relative size-52 overflow-hidden rounded-full bg-gradient-to-br from-primary/25 via-accent2/20 to-accent3/15 p-1 shadow-[0_0_60px_-12px_var(--primary)] transition-transform duration-500 group-hover:scale-[1.03]">
                       {imgError ? (
                         <div className="flex size-full items-center justify-center rounded-full bg-secondary/70 font-display text-5xl font-bold text-gradient">
                           {p.name.charAt(0)}
@@ -263,11 +263,6 @@ export function Hero() {
                       )}
                     </div>
                   </ElectricBorder>
-                  {/* Click hint badge */}
-                  <span className="pointer-events-none absolute -right-2 bottom-3 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-background/80 px-2.5 py-1 font-mono text-[10px] font-medium text-primary opacity-90 backdrop-blur transition-all duration-300 group-hover:bg-primary group-hover:text-background">
-                    <Globe className="size-3" />
-                    Skills
-                  </span>
                 </button>
               }
             />
