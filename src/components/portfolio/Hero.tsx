@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { ArrowRight, FileText, Github, Globe, Linkedin, Mail, Terminal } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { ElectricBorder } from "@/components/effects/ElectricBorder";
 import { Magnet } from "@/components/effects/Magnet";
@@ -103,30 +103,62 @@ export function Hero() {
     activeResume?.fileUrl && activeResume.fileUrl !== "#" ? activeResume.fileUrl : p.resumeUrl;
   const showResumeButton = p.showResume && Boolean(resumeHref);
 
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+
+  const yOrbs = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const yBackground = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const springX = useSpring(mouseX, { stiffness: 80, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 80, damping: 20 });
+
+  const moveX = useTransform(springX, [-0.5, 0.5], [-30, 30]);
+  const moveY = useTransform(springY, [-0.5, 0.5], [-30, 30]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { innerWidth, innerHeight } = window;
+      const xVal = (e.clientX / innerWidth) - 0.5;
+      const yVal = (e.clientY / innerHeight) - 0.5;
+      mouseX.set(xVal);
+      mouseY.set(yVal);
+    };
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
   return (
-    <section id="hero" className="relative isolate overflow-hidden pt-36 pb-24 sm:pt-44 sm:pb-32">
+    <section id="hero" ref={sectionRef} className="relative isolate overflow-hidden pt-36 pb-24 sm:pt-44 sm:pb-32">
       {/* Background layers */}
       <div className="absolute inset-0 -z-20 grid-bg opacity-60" aria-hidden />
-      <div className="absolute inset-0 -z-10" aria-hidden>
+      <motion.div style={{ y: yBackground }} className="absolute inset-0 -z-10" aria-hidden>
         <ParticleField />
         <Strands className="opacity-60" count={24} />
         <SplashCursor className="opacity-60" />
         <Meteors count={12} />
         <ShapeBlur />
-      </div>
-      <Orb
-        className="absolute -top-48 left-1/2 -translate-x-1/2"
-        size={672}
-        color="var(--primary)"
-        opacity={0.18}
-      />
-      <Orb className="absolute -right-40 top-32" size={448} color="var(--accent2)" opacity={0.14} />
-      <Orb
-        className="absolute -left-32 bottom-0"
-        size={384}
-        color="var(--accent3)"
-        opacity={0.12}
-      />
+      </motion.div>
+      <motion.div style={{ y: yOrbs }} className="absolute inset-0 pointer-events-none -z-10" aria-hidden>
+        <Orb
+          className="absolute -top-48 left-1/2 -translate-x-1/2"
+          size={672}
+          color="var(--primary)"
+          opacity={0.18}
+        />
+        <Orb className="absolute -right-40 top-32" size={448} color="var(--accent2)" opacity={0.14} />
+        <Orb
+          className="absolute -left-32 bottom-0"
+          size={384}
+          color="var(--accent3)"
+          opacity={0.12}
+        />
+      </motion.div>
 
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid items-center gap-10 lg:grid-cols-[1fr_380px] lg:gap-14">
@@ -234,6 +266,7 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.88, rotate: -4 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            style={{ x: moveX, y: moveY }}
             className="relative mx-auto flex items-center justify-center lg:mx-0"
           >
             <OrbitImages

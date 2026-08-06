@@ -3,6 +3,7 @@ import { ArrowUpRight, Github, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { SpotlightCard } from "@/components/effects/SpotlightCard";
+import { TiltedCard } from "@/components/effects/TiltedCard";
 import { useSection } from "@/hooks/usePortfolioData";
 import type { Project } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Reveal";
@@ -15,9 +16,10 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col"
+      className="flex flex-col h-full"
     >
-      <SpotlightCard className="group flex h-full flex-col overflow-hidden rounded-3xl glass glow-hover">
+      <TiltedCard intensity={8} glare={true} className="h-full">
+        <SpotlightCard className="group flex h-full flex-col overflow-hidden rounded-3xl glass glow-hover">
         <button onClick={onOpen} className="relative aspect-16/10 overflow-hidden text-left">
           {project.image ? (
             <img
@@ -88,6 +90,7 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
           </div>
         </div>
       </SpotlightCard>
+      </TiltedCard>
     </motion.article>
   );
 }

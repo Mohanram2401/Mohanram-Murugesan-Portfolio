@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
 import { Menu, ShieldCheck, X, Terminal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { useSettings } from "@/hooks/usePortfolioData";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -106,8 +107,21 @@ export function Navbar() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const navigate = useNavigate();
+  const [logoClicks, setLogoClicks] = useState<{ count: number; lastClick: number }>({ count: 0, lastClick: 0 });
+
   const onLogoClick = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+    const now = Date.now();
+    setLogoClicks((prev) => {
+      const isQuick = now - prev.lastClick < 3000;
+      const count = isQuick ? prev.count + 1 : 1;
+      if (count >= 5) {
+        void navigate({ to: "/admin" });
+        return { count: 0, lastClick: 0 };
+      }
+      return { count, lastClick: now };
+    });
   };
 
   return (

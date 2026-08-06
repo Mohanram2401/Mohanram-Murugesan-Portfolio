@@ -10,6 +10,7 @@ import { Projects } from "@/components/portfolio/Projects";
 import { SectionDivider } from "@/components/portfolio/SectionDivider";
 import { TechMarquee } from "@/components/portfolio/TechMarquee";
 import { Timeline } from "@/components/portfolio/Timeline";
+import { ParallaxBackground } from "@/components/effects/ParallaxBackground";
 import { useSettings } from "@/hooks/usePortfolioData";
 import { defaultSettings } from "@/lib/profile";
 
@@ -38,7 +39,8 @@ function Index() {
   return (
     <>
       <Navbar />
-      <main>
+      <main className="relative">
+        <ParallaxBackground />
         <Hero />
         {v.skills ? <TechMarquee /> : null}
         {v.about ? (
